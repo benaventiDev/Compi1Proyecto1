@@ -5,6 +5,7 @@ package main.specifications;
 
 //import java_cup.runtime.*;
 import java.io.Reader;
+
 import main.specifications.Symbol;
 import main.specifications.sym;
 
@@ -22,6 +23,7 @@ import main.specifications.sym;
 
 
 %{
+    private int errorCounter;
     StringBuffer string = new StringBuffer("");
     private Symbol symbol(sym type) {
         return new Symbol(type, yyline, yycolumn);
@@ -29,8 +31,17 @@ import main.specifications.sym;
     private Symbol symbol(sym type, Object value) {
         return new Symbol(type, yyline, yycolumn, value);
     }
-
+    public int getErrorCounter(){
+        return errorCounter;
+    }
 %}
+
+
+
+
+%init{
+    errorCounter = 0;
+%init}
 
 
 LineTerminator = \r|\n|\r\n
@@ -38,7 +49,7 @@ InputCharacter = [^\r\n]
 WhiteSpace = {LineTerminator} | [ \t\f]
 
 /* comments */
-Comment = {TraditionalComment} | {EndOfLineComment} | {DocumentationComment} | {WhiteSpace}
+Comment = {TraditionalComment} | {EndOfLineComment} | {DocumentationC`omment} | {WhiteSpace}
 TraditionalComment = "/*" [^*]~"*/" | "/*" "*" + "/"
 // Comment can be the last line of the file, without line terminator.
 EndOfLineComment = "//" {InputCharacter}* {LineTerminator}?
@@ -64,9 +75,11 @@ Double = "-"?[0-9]+ "." [0-9]+
 
 %%
 /* keywords */
+
       <YYINITIAL> "true" { return symbol(sym.TRUE);}
       <YYINITIAL> "false" { return symbol(sym.FALSE);}
       <YYINITIAL> "var" { return symbol(sym.VAR); }
+      <YYINITIAL> "from" { return symbol(sym.FROM); }
       <YYINITIAL> "pow" { return symbol(sym.POW); }
       <YYINITIAL> "{" { return symbol(sym.OPEN_CURLY_BRACKET); }
       <YYINITIAL> "}" { return symbol(sym.CLOSE_CURLY_BRACKET); }
@@ -90,7 +103,6 @@ Double = "-"?[0-9]+ "." [0-9]+
       <YYINITIAL> "^" { return symbol(sym.XOR); }
       <YYINITIAL> "!" { return symbol(sym.NOT); }
       <YYINITIAL> "import" { return symbol(sym.IMPORT); }
-      <YYINITIAL> "from" { return symbol(sym.FROM); }
       <YYINITIAL> "si" { return symbol(sym.IF); }
       <YYINITIAL> "sino" { return symbol(sym.ELSE); }
       <YYINITIAL> "return" { return symbol(sym.RETURN); }
@@ -130,7 +142,7 @@ Double = "-"?[0-9]+ "." [0-9]+
 
 <YYINITIAL> {
 {return} {string.setLength(0); yybegin(COMPONENTSTATE);}
-
+{character} {return symbol(sym.CHARACTER); }
 
 
 /* identifiers */
@@ -171,6 +183,8 @@ Double = "-"?[0-9]+ "." [0-9]+
       "color" { return symbol(sym.COLOR); }
       "border" { return symbol(sym.BORDER); }
       "classname" { return symbol(sym.CLASS_NAME); }
+      "onclick" { return symbol(sym.ON_CLICK); }
+      "hash" {return symbol(sym.HASH);}
       "{" { return symbol(sym.OPEN_CURLY_BRACKET); }
       "}" { return symbol(sym.CLOSE_CURLY_BRACKET); }
       "[" { return symbol(sym.OPEN_SQUARE_BRACKET); }
@@ -220,7 +234,7 @@ string.toString()); }
 \\ { string.append('\\'); }
 }
 /* error fallback */
-[^] {
+[^] { errorCounter++;
           return symbol(sym.ERROR, yytext().toString());
       }
 

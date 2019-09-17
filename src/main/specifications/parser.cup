@@ -1,0 +1,384 @@
+package main.specifications;
+import java_cup.runtime.*;
+
+/* Preliminaries to set up and use the scanner. */
+//action code {: :} TODO
+init with {: scanner.init();                :};
+scan with {: return scanner.next_token();   :};
+
+
+
+/* Terminals (tokens returned by the scanner). */
+
+terminal IMPORT, VAR, FROM, IDENTIFIER, INTEGER, DOUBLE, CHARACTER, TRUE, FALSE, STRING_LITERAL, SEMI, COMA; // General
+terminal OPEN_CURLY_BRACKET, CLOSE_CURLY_BRACKET, OPEN_PARENTHESES, CLOSE_PARENTHESES, OPEN_SQUARE_BRACKET, CLOSE_SQUARE_BRACKET; //brackets
+terminal LESS_THAN, GREATER_THAN, LESS_THAN_OR_EQUAL, GREATER_THAN_OR_EQUAL, NOT_EQUAL, EQUAL; //Comparison
+terminal PLUS, MINUS,TIMES, DIV, POW,  ASSIGN; //algebraic opearations
+terminal AND, OR, XOR, NOT;//logical operators
+terminal  IF, ELSE, RETURN , REPEAT, PRINT,  WHILE, RENDER, COMPONENT; //Reserved words
+terminal PANEL, TEXT, TEXTFIELD, BUTTON, LIST, ELEMENTS, ITEM, DEFAULT, SPINNER, MAX, MIN, IMAGE, ID, X, Y, HEIGHT, WIDTH, COLOR, BORDER, CLASS_NAME, ON_CLICK, SLASH;// Inner attributes
+terminal ERROR; //Error
+
+non terminal //TODO
+
+
+
+/* The grammar */
+UFE ::= IMPORT_LIST ;
+
+_IMPORT_LIST ::= IMPORT IDENTIFIER FROM STRING_LITERAL SEMI _IMPORT_LIST |
+                IMPORT STRING_LITERAL SEMI _IMPORT_LIST |
+                ;
+_DECLARATION ::= VAR IDENTIFIER _ASSIGNATION_LIST SEMI;
+
+_ASSIGNATION_LIST ::= COMA IDENTIFIER _ASSIGNATION_LIST |
+                     EQUAL _ASSIGNMENT_VALUE |
+                     ;
+
+_ASSIGNMENT_VALUE ::= STRING_LITERAL | INTEGER | DOUBLE | CHARACTER | TRUE | FALSE | IDENTIFIER;
+
+_RENDER ::= RENDER OPEN_PARENTHESES LESS_THAN IDENTIFIER  DIV GREATER_THAN COMA _RENDER_SUB CLOSE_PARENTHESES SEMI;
+
+_RENDER_SUB ::=  IDENTIFIER  | // Render(< IDENTIFIER />, IDENTIFIER);
+                 STRING_LITERAL;
+
+
+                                                    /*IF GRAMMAR*/
+_IF ::=  IF OPEN_PARENTHESES _CONDITION_BOOL CLOSE_PARENTHESES OPEN_CURLY_BRACKET _INSTRUCTION_LIST CLOSE_CURLY_BRACKET _ELSE;
+
+_ELSE ::= ELSE _ELSE_SUB|
+        /*empty*/
+        ;
+
+_ELSE_SUB ::= IF OPEN_PARENTHESES _CONDITION_BOOL CLOSE_PARENTHESES OPEN_CURLY_BRACKET _INSTRUCTION_LIST CLOSE_CURLY_BRACKET _ELSE |
+               OPEN_CURLY_BRACKET _INSTRUCTION_LIST CLOSE_CURLY_BRACKET |
+               /*empty*/
+               ;
+
+
+                                                    /*REPEAT*/
+// PRINT,  WHILE, RENDER, COMPONENT; //Reserved words
+
+_REPEAT ::= REPEAT OPEN_PARENTHESES EXPR CLOSE_PARENTHESES OPEN_CURLY_BRACKET _INSTRUCTION_LIST CLOSE_CURLY_BRACKET
+            ;
+
+                                                    /*WHILE*/
+_WHILE ::= WHILE OPEN_PARENTHESES _CONDITION_BOOL CLOSE_PARENTHESES OPEN_CURLY_BRACKET _INSTRUCTION_LIST CLOSE_CURLY_BRACKET
+            ;
+
+                                                    /*PRINT*/
+_PRINT ::= PRINT  OPEN_PARENTHESES _PRINT_STM CLOSE_PARENTHESES SEMI
+_PRINT_STM ::= _STRING_EXP |
+               EXPR |
+               _CONDITION_BOOL
+               ;
+
+
+                                                    /*CONDITION*/
+
+_CONDITION_BOOL ::= _NOT _BOOLEAN_VALUE _BOOLEAN_OPERATION
+                    ;
+
+_BOOLEAN_OPERATION ::= _LOGIC_OPERATION _NOT _BOOLEAN_VALUE _BOOLEAN_OPERATION |
+                       /*empty*/
+                       ;
+
+_NOT ::= NOT|
+        /*empty*/
+        ;
+
+_LOGIC_OPERATION ::= AND|
+                     OR|
+                     XOR
+                     ;
+
+_BOOLEAN_VALUE ::= TRUE|
+                   FALSE|
+                   INTEGER _COMPARISON_OP _COMPARISON_PAIR |
+                   DOUBLE _COMPARISON_OP _COMPARISON_PAIR |
+                   CHARACTER _COMPARISON_OP _COMPARISON_PAIR |
+                   STRING_LITERAL _COMPARISON_STRING STRING_LITERAL
+                   ;
+
+_COMPARISON_OP ::= LESS_THAN|
+                   GREATER_THAN|
+                   LESS_THAN_OR_EQUAL|
+                   GREATER_THAN_OR_EQUAL|
+                   NOT_EQUAL|
+                   EQUAL
+                   ;
+
+_COMPARISON_STRING ::= NOT_EQUAL|
+                       EQUAL
+                       ;
+
+_COMPARISON_PAIR ::= INTEGER|
+                     DOUBLE|
+                     CHARACTER
+                     ;
+
+
+
+                                                        /*Arithmetic Operations*/
+
+_STRING_EXP ::= STRING_LITERAL PLUS _STRING_EXP_SUB_2  _STRING_EXP_SUB|
+                _STRING_OPT PLUS STRING_LITERAL _STRING_EXP_SUB|
+                STRING_LITERAL
+                ;
+
+_STRING_EXP_SUB_2 ::= _STRING_OPT |
+                      STRING_LITERAL
+                      ;
+
+_STRING_EXP_SUB ::= PLUS _STRING_EXP |
+                   /*empty*/
+                   ;
+
+_STRING_OPT ::= EXPR |
+               TRUE |
+               FALSE
+               ;
+
+EXPR ::= EXP PLUS TERM |
+         EXP MINUS TERM |
+         MINUS TERM |
+         TERM
+         ;
+
+TERM ::= TERM TIMES FACTOR|
+         TERM DIV FACTOR |
+         FACTOR
+         ;
+
+FACTOR ::= FACTOR POW FACTOR_2 |
+           FACTOR _2
+           ;
+
+FACTOR_2 ::= OPEN_PARENTHESES EXPR CLOSE_PARENTHESES|
+             | _NUMBER
+             ;
+
+_NUMBER ::= INTEGER|
+            DOUBLE|
+            CHARACTER |
+            IDENTIFIER
+            ;
+
+//*******************************************************************************************************************************************************************************************************
+
+                                                                    /*CONTENT METHOD*/
+_COMPONENT ::= COMPONENT IDENTIFIER OPEN_PARENTHESES CLOSE_PARENTHESES OPEN_CURLY_BRACKET RETURN OPEN_PARENTHESES _CONTENT CLOSE_PARENTHESES SEMI CLOSE_CURLY_BRACKET
+               ;
+
+
+
+                                                                    /*CONTENT*/
+_CONTENT ::= LESS_THAN _CONTENT_OPT |
+             /*empty*/
+             ;
+
+_CONTENT_OPT ::=  SLASH IDENTIFIER GREATER_THAN |
+                  _PANEL|
+                  _IMAGE|
+                  _SPINNER|
+                  _LIST_COMPONENT|
+                  _BUTTON|
+                  _TEXT_FIELD|
+                  _TEXT
+                  ;
+
+                                                                       /*ATTR*/
+_ATTR ::= _ID _ATTR |
+          _X _ATTR |
+          _Y _ATTR |
+          _HEIGHT _ATTR |
+          _WIDTH _ATTR |
+          _COLOR _ATTR |
+          _BORDER _ATTR |
+          _CLASS_NAME _ATTR |
+          |*empty*/
+          ;
+
+
+_ID ::= ID  EQUAL _ID_CURLY
+            ;
+
+_X ::= X  EQUAL _INT_OR_ID
+          ;
+
+_Y ::= Y  EQUAL _INT_OR_ID
+          ;
+
+_HEIGHT ::= HEIGHT  EQUAL _INT_OR_ID
+            ;
+
+_WIDTH ::= WIDTH  EQUAL _INT_OR_ID
+           ;
+
+_COLOR ::= COLOR  EQUAL
+           ;
+
+_BORDER ::= BORDER  EQUAL _INT_OR_ID
+            ;
+
+_CLASS_NAME ::= CLASS_NAME EQUAL _STR_OR_ID
+                ;
+
+STR_OR_HEX ::= _STR_OR_ID |
+               HASH IDENTIFIER
+               ;
+
+
+                                                                    /*PANEL*/
+_PANEL ::= PANEL _ATTR GREATER_THAN  _PANEL_BODY LESS_THAN SLASH PANEL GREATER_THAN
+           ;
+
+_PANEL_BODY ::= LESS_THAN _PANEL_SEQ|
+               /*empty*/
+               ;
+
+_PANEL_SEQ ::= _PANEL _PANEL_BODY |
+                    EXTRA_COMP_OPT
+
+EXTRA_COMP_OPT ::= _IMAGE |
+                   _SPINNER |
+                   _LIST_COMPONENT |
+                   _BUTTON |
+                   _TEXT_FIELD |
+                   _TEXT
+                   ;
+
+
+                                                                    /*IMAGE*/
+_IMAGE ::=  IMAGE _ATTR_IMAGE GREATER_THAN
+
+_ATTR_IMAGE ::=  _ATTR  _ATTR_IMAGE |
+                 _SRC_ATTR _ATTR
+                 ;
+
+_SRC_ATTR ::= _SRC EQUAL _STR_OR_ID
+              ;
+
+_STR_OR_ID ::= _STRING_EXP |
+               IDENTIFIER |
+               OPEN_CURLY_BRACKET IDENTIFIER CLOSE_CURLY_BRACKET
+               ;
+
+
+                                                                    /*SPINNER*/
+_SPINNER ::= SPINNER _ATTR_SPINNER GREATER_THAN _INT_OR_ID LESS_THAN SLASH SPINNER GREATER_THAN
+
+_ATTR_SPINNER ::= _ATTR _ATTR_SPINNER |
+                  _MIN _ATTR _ATTR_SPINNER_MAX |
+                  _MAX _ATTR _ATTR_SPINNER_MIN |
+                  /*empty*/
+                  ;
+
+_ATTR_SPINNER_MAX ::=  _ATTR _ATTR_SPINNER_MAX |
+                       _MAX _ATTR |
+                       /*empty*/
+                       ;
+
+_ATTR_SPINNER_MIN ::=  _ATTR _ATTR_SPINNER_MIN |
+                       _MIN _ATTR |
+                       /*empty*/
+                       ;
+
+_MIN ::= MIN EQUAL _INT_OR_ID
+
+_MAX ::= MAX EQUAL _INT_OR_ID
+
+
+_INT_OR_ID ::= INTEGER |
+               IDENTIFIER|
+               OPEN_CURLY_BRACKET IDENTIFIER CLOSE_CURLY_BRACKET
+               ;
+
+//TODO:  checkquear mins y  max repetidos y distribuidos entre el codigo
+
+
+                                                                    /*LIST COMPONENT*/
+_LIST_COMPONENT ::=  LIST _ATTR  GREATER_THAN _LIST_BODY LESS_THAN SLASH LIST  GREATER_THAN
+
+_LIST_BODY ::=  _DEFAULT LESS_THAN ELEMENTS GREATER_THAN _ELEMENTS_BODY LESS_THAN SLASH ELEMENTS GREATER_THAN |
+                LESS_THAN ELEMENTS GREATER_THAN _ELEMENTS_BODY LESS_THAN SLASH ELEMENTS GREATER_THAN _DEFAULT_OPT
+                ;
+
+_ELEMENTS_BODY ::= LESS_THAN ITEM GREATER_THAN _ITEM_BODY LESS_THAN SLASH ITEM GREATER_THAN _ELEMENTS_BODY |
+                   /*empty*/
+                   ;
+
+_ITEM_BODY ::= OPEN_CURLY_BRACKET IDENTIFIER CLOSE_CURLY_BRACKET|
+               _NUMBER |
+               _STRING_EXP
+               ;
+
+_DEFAULT ::= LESS_THAN DEFAULT GREATER_THAN _INT_OR_ID LESS_THAN SLASH DEFAULT GREATER_THAN
+             ;
+
+_DEFAULT_OPT ::= LESS_THAN DEFAULT GREATER_THAN _INT_OR_ID LESS_THAN SLASH DEFAULT GREATER_THAN|
+                 /*empty*/
+                 ;
+
+
+
+
+                                                                            /*BUTTON*/
+_BUTTON ::=  BUTTON _ATTR_BTN GREATER_THAN _BUTTON_BODY LESS_THAN SLASH BUTTON GREATER_THAN
+
+_BUTTON_BODY ::= _STR_OR_ID |
+                 /*empty*/
+                 ;
+
+_ATTR_BTN ::= _ATTR  _ATTR_BTN | //MANDATORY ONCLICK
+              _ON_CLICK _ATTR
+              ;
+
+_ON_CLICK ::= ON_CLICK EQUAL _ID_CURLY
+
+_ID_CURLY ::=  IDENTIFIER |
+               OPEN_CURLY_BRACKET IDENTIFIER CLOSE_CURLY_BRACKET
+               ;
+
+
+
+                                                                        /*TEXT AND TEXT FIELD*/
+_TEXT ::=  TEXT _ATTR GREATER_THAN _TEXT_BODY LESS_THAN SLASH TEXT GREATER_THAN
+          ;
+
+_TEXT_FIELD ::=  TEXTFIELD _ATTR GREATER_THAN _TEXT_BODY LESS_THAN SLASH TEXTFIELD GREATER_THAN
+                ;
+
+_TEXT_BODY ::= _STR_OR_ID |
+               /*empty*/
+               ;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
